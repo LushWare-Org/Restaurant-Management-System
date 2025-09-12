@@ -1,7 +1,89 @@
 const express = require('express');
 const router = express.Router();
 const Reservation = require('../models/Reservation');
+const Table = require('../models/Table');
 const Notification = require('../models/Notification');
+
+// GET /api/table-reservations/tables - Get all tables
+router.get('/tables', async (req, res) => {
+  try {
+    // First check if we have tables in the database
+    let tables = await Table.find();
+    
+    // If no tables exist, create default tables
+    if (tables.length === 0) {
+      const defaultTables = [
+        { tableId: 'T1', capacity: 2, location: 'Window', status: 'available' },
+        { tableId: 'T2', capacity: 2, location: 'Window', status: 'available' },
+        { tableId: 'T3', capacity: 4, location: 'Main Hall', status: 'available' },
+        { tableId: 'T4', capacity: 4, location: 'Main Hall', status: 'available' },
+        { tableId: 'T5', capacity: 6, location: 'Private Room', status: 'available' },
+        { tableId: 'T6', capacity: 6, location: 'Private Room', status: 'available' },
+        { tableId: 'T7', capacity: 8, location: 'Patio', status: 'available' },
+        { tableId: 'T8', capacity: 8, location: 'Patio', status: 'available' },
+      ];
+      
+      tables = await Table.insertMany(defaultTables);
+    }
+    
+    // Format response to match frontend expectations
+    const formattedTables = tables.map(table => ({
+      id: table.tableId,
+      capacity: table.capacity,
+      location: table.location,
+      status: table.status
+    }));
+    
+    res.json(formattedTables);
+  } catch (error) {
+    console.error('Error fetching tables:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/table-reservations/time-slots - Get available time slots
+router.get('/time-slots', async (req, res) => {
+  try {
+    // Generate time slots from 10:00 AM to 10:00 PM in 30-minute intervals
+    const timeSlots = [];
+    for (let hour = 10; hour <= 22; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        if (hour === 22 && minute > 0) break; // Don't go past 10:00 PM
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        timeSlots.push(timeString);
+      }
+    }
+    res.json(timeSlots);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/table-reservations/tables/:id/status - Update table status
+router.put('/tables/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const table = await Table.findOne({ tableId: id });
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+    
+    table.status = status;
+    table.updatedAt = new Date();
+    await table.save();
+    
+    res.json({
+      id: table.tableId,
+      capacity: table.capacity,
+      location: table.location,
+      status: table.status
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // GET /api/reservations
 router.get('/reservations', async (req, res) => {
