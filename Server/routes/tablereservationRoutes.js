@@ -162,16 +162,23 @@ router.post('/reservations', async (req, res) => {
     let tableCapacity = 0;
     if (!tableId) {
       // Auto-assign table
-      const availableTable = allTables.find((t) => {
-        if (t.capacity < party) return false;
-        const isReserved = Reservation.findOne({
+      let availableTable = null;
+      
+      for (const t of allTables) {
+        if (t.capacity < party) continue;
+        
+        const isReserved = await Reservation.findOne({
           date: new Date(date),
           time,
           table: t.id,
           status: { $in: ['pending', 'confirmed', 'seated'] },
         });
-        return !isReserved;
-      });
+        
+        if (!isReserved) {
+          availableTable = t;
+          break;
+        }
+      }
 
       if (!availableTable) return res.status(400).json({ error: 'No available table for the party size' });
       tableId = availableTable.id;

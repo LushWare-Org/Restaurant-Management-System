@@ -199,7 +199,15 @@ const TableReservation = () => {
   const handleStatusChange = async (id, newStatus) => {
     try {
       const response = await axios.put(`http://localhost:8000/api/tablereservation/reservations/${id}/status`, { status: newStatus });
+      
+      // Update the reservations array
       setReservations(reservations.map((r) => (r.id === id ? response.data : r)));
+      
+      // Update the selected reservation if it's the one being modified
+      if (selectedReservation && selectedReservation.id === id) {
+        setSelectedReservation(response.data);
+      }
+      
       fetchData();
     } catch (error) {
       console.error('Error updating status:', error);
