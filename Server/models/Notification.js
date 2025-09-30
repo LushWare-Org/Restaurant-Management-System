@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
-  type: { type: String, enum: ['reservation', 'system', 'alert'], required: true },
+  type: { type: String, enum: ['reservation', 'walkin', 'system', 'alert'], required: true },
   message: { type: String, required: true },
   details: { type: String },
   relatedId: { type: mongoose.Schema.Types.ObjectId, required: true },
